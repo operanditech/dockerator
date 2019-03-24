@@ -4,22 +4,29 @@ class Dockerator {
   constructor({
     image,
     command,
-    printOutput = false,
     portMappings = [],
+    stdio = "inherit",
     dockerConfig = {}
   } = {}) {
     this.docker = new Docker();
     this.image = image;
     this.command = command;
-    this.printOutput = printOutput;
     this.portMappings = portMappings.map(m =>
       Array.isArray(m) ? m : m.split(":")
     );
+    if (stdio === "inherit") {
+      this.stdio = {
+        stdout: global.process.stdout,
+        stderr: global.process.stderr
+      };
+    } else {
+      this.stdio = stdio;
+    }
     this.dockerConfig = dockerConfig;
   }
   async setup() {
-    if (this.printOutput) {
-      console.log("Preparing docker image...");
+    if (this.stdio.stdout.writable) {
+      this.stdio.stdout.write("Preparing docker image...\n");
     }
     const stream = await this.docker.pull(this.image);
     await new Promise((resolve, reject) => {
@@ -27,8 +34,8 @@ class Dockerator {
         error ? reject(error) : resolve(result)
       );
     });
-    if (this.printOutput) {
-      console.log("Docker image ready");
+    if (this.stdio.stdout.writable) {
+      this.stdio.stdout.write("Docker image ready\n");
     }
   }
   async stop() {
@@ -65,7 +72,7 @@ class Dockerator {
       Cmd: this.command || undefined,
       ...this.dockerConfig
     });
-    if (this.printOutput) {
+    if (this.stdio.stdout.writable || this.stdio.stderr.writable) {
       const stream = await this.container.attach({
         stream: true,
         stdout: true,
@@ -73,7 +80,7 @@ class Dockerator {
       });
       stream.setEncoding("utf8");
       stream.pipe(
-        process.stdout,
+        this.stdio.stdout,
         {
           end: true
         }
@@ -81,7 +88,7 @@ class Dockerator {
     }
     await this.container.start();
   }
-  loadExitHandler(process = process) {
+  loadExitHandler(process = global.process) {
     const exitHandler = () => {
       this.stop().finally(() => {
         process.exit();

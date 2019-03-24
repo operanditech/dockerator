@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/operanditech/dockerator/issues"
   },
-  "homepage": "https://github.com/operanditech/dockerator#readme"
+  "homepage": "https://github.com/operanditech/dockerator#readme",
+  "dependencies": {
+    "dockerode": "^2.5.8"
+  }
 }
