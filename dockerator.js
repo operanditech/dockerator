@@ -4,6 +4,7 @@ class Dockerator {
   constructor({
     image,
     command,
+    detach = false,
     portMappings = [],
     stdio = "inherit",
     dockerConfig = {}
@@ -11,10 +12,13 @@ class Dockerator {
     this.docker = new Docker();
     this.image = image;
     this.command = command;
+    this.detach = detach;
     this.portMappings = portMappings.map(m =>
       Array.isArray(m) ? m : m.split(":")
     );
-    if (stdio === "inherit") {
+    if (detach) {
+      this.stdio = "ignore";
+    } else if (stdio === "inherit") {
       this.stdio = {
         stdout: global.process.stdout,
         stderr: global.process.stderr
@@ -24,8 +28,14 @@ class Dockerator {
     }
     this.dockerConfig = dockerConfig;
   }
+  get canPrint() {
+    return (
+      this.stdio !== "ignore" && this.stdio.stdout && this.stdio.stdout.writable
+    );
+  }
   async setup() {
-    if (this.stdio.stdout.writable) {
+    const t1 = Date.now();
+    if (this.canPrint) {
       this.stdio.stdout.write("Preparing docker image...\n");
     }
     const stream = await this.docker.pull(this.image);
@@ -34,9 +44,10 @@ class Dockerator {
         error ? reject(error) : resolve(result)
       );
     });
-    if (this.stdio.stdout.writable) {
+    if (this.canPrint) {
       this.stdio.stdout.write("Docker image ready\n");
     }
+    console.log("Time:", Date.now() - t1);
   }
   async stop() {
     if (!this.container) {
@@ -72,19 +83,21 @@ class Dockerator {
       Cmd: this.command || undefined,
       ...this.dockerConfig
     });
-    if (this.stdio.stdout.writable || this.stdio.stderr.writable) {
+    if (!this.detach) {
       const stream = await this.container.attach({
         stream: true,
         stdout: true,
         stderr: true
       });
-      stream.setEncoding("utf8");
-      stream.pipe(
-        this.stdio.stdout,
-        {
-          end: true
-        }
-      );
+      if (this.canPrint) {
+        stream.setEncoding("utf8");
+        stream.pipe(
+          this.stdio.stdout,
+          {
+            end: true
+          }
+        );
+      }
     }
     await this.container.start();
   }

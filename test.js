@@ -11,9 +11,8 @@ async function main() {
 }
 
 async function runMongo() {
-  dock = new Dockerator({
+  const dock = new Dockerator({
     image: "mongo:4.0.6",
-    printOutput: true,
     portMappings: ["27017:27017"]
   });
   await dock.setup();
@@ -22,7 +21,7 @@ async function runMongo() {
 }
 
 async function runNodeos() {
-  dock = new Dockerator({
+  const dock = new Dockerator({
     image: "eosio/eos-dev:v1.5.2",
     command: [
       "bash",
@@ -40,7 +39,6 @@ async function runNodeos() {
       --contracts-console \
       --verbose-http-errors`
     ],
-    printOutput: true,
     portMappings: ["8888:8888", "8080:8889"]
   });
   await dock.setup();
