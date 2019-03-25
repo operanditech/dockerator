@@ -34,20 +34,26 @@ class Dockerator {
     );
   }
   async setup() {
-    const t1 = Date.now();
-    if (this.canPrint) {
-      this.stdio.stdout.write("Preparing docker image...\n");
+    try {
+      await this.docker.getImage(this.image).inspect();
+    } catch (error) {
+      if (error.statusCode === 404) {
+        if (this.canPrint) {
+          this.stdio.stdout.write("Preparing docker image...\n");
+        }
+        const stream = await this.docker.pull(this.image);
+        await new Promise((resolve, reject) => {
+          this.docker.modem.followProgress(stream, (error, result) =>
+            error ? reject(error) : resolve(result)
+          );
+        });
+        if (this.canPrint) {
+          this.stdio.stdout.write("Docker image ready\n");
+        }
+      } else {
+        throw error;
+      }
     }
-    const stream = await this.docker.pull(this.image);
-    await new Promise((resolve, reject) => {
-      this.docker.modem.followProgress(stream, (error, result) =>
-        error ? reject(error) : resolve(result)
-      );
-    });
-    if (this.canPrint) {
-      this.stdio.stdout.write("Docker image ready\n");
-    }
-    console.log("Time:", Date.now() - t1);
   }
   async stop() {
     if (!this.container) {
