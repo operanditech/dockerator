@@ -6,8 +6,18 @@ main().catch(error => {
 });
 
 async function main() {
+  await runFalse();
   // await runMongo();
-  await runNodeos();
+  // await runNodeos();
+}
+
+async function runFalse() {
+  const dock = new Dockerator({
+    image: "mongo:4.0.6",
+    command: ["bash", "-c", 'echo "Some falsehood" && false']
+  });
+  await dock.setup();
+  await dock.start({ untilExit: true });
 }
 
 async function runMongo() {

@@ -62,7 +62,7 @@ class Dockerator {
     await this.container.stop();
     await this.container.remove();
   }
-  async start() {
+  async start({ untilExit = false } = {}) {
     this.container = await this.docker.createContainer({
       AttachStdin: false,
       AttachStdout: true,
@@ -95,6 +95,27 @@ class Dockerator {
         stdout: true,
         stderr: true
       });
+      if (untilExit) {
+        let markSuccess, markError;
+        this.finished = new Promise((resolve, reject) => {
+          markSuccess = resolve;
+          markError = reject;
+        });
+        stream.once("end", () => {
+          this.container
+            .inspect()
+            .then(({ State }) => {
+              if (State.Status === "exited" && State.ExitCode === 0) {
+                markSuccess();
+              } else {
+                const error = new Error(State.Error);
+                error.exitCode = State.ExitCode;
+                markError(error);
+              }
+            })
+            .catch(markError);
+        });
+      }
       if (this.canPrint) {
         stream.setEncoding("utf8");
         stream.pipe(
@@ -106,6 +127,9 @@ class Dockerator {
       }
     }
     await this.container.start();
+    if (untilExit) {
+      return this.finished;
+    }
   }
   loadExitHandler(process = global.process) {
     const exitHandler = () => {
