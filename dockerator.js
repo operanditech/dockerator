@@ -124,6 +124,8 @@ class Dockerator {
             end: true
           }
         );
+      } else {
+        stream.on("data", () => {});
       }
     }
     await this.container.start();
