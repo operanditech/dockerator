@@ -96,24 +96,37 @@ class Dockerator {
         stderr: true
       });
       if (untilExit) {
-        let markSuccess, markError;
         this.finished = new Promise((resolve, reject) => {
-          markSuccess = resolve;
-          markError = reject;
-        });
-        stream.once("end", () => {
-          this.container
-            .inspect()
-            .then(({ State }) => {
-              if (State.Status === "exited" && State.ExitCode === 0) {
-                markSuccess();
-              } else {
-                const error = new Error(State.Error);
-                error.exitCode = State.ExitCode;
-                markError(error);
-              }
-            })
-            .catch(markError);
+          stream.once("end", () => {
+            this.container
+              .inspect()
+              .then(({ State }) => {
+                if (State.Status === "exited" && State.ExitCode === 0) {
+                  resolve();
+                } else {
+                  const error = new Error(State.Error);
+                  error.exitCode = State.ExitCode;
+                  reject(error);
+                }
+              })
+              .catch(markError);
+          });
+  
+          const checkerHandler = setInterval(async () => {
+            const cInfo = await this.container.inspect();
+            if(cInfo.State.Status == "running")
+              return;
+  
+            if (cInfo.State.Status === "exited" && cInfo.State.ExitCode === 0) {
+              resolve();
+            } else {
+              const error = new Error(cInfo.State.Error);
+              error.exitCode = cInfo.State.ExitCode;
+              reject(error);
+            }
+
+            clearInterval(checkerHandler);
+          }, 1000)
         });
       }
       if (this.canPrint) {
