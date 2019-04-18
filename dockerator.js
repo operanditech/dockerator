@@ -101,28 +101,52 @@ class Dockerator {
           markSuccess = resolve;
           markError = reject;
         });
-        stream.once("end", () => {
-          this.container
-            .inspect()
-            .then(({ State }) => {
-              if (State.Status === "exited" && State.ExitCode === 0) {
-                markSuccess();
-              } else {
-                const error = new Error(State.Error);
-                error.exitCode = State.ExitCode;
+        if (process.platform !== "win32") {
+          stream.once("end", () => {
+            this.container
+              .inspect()
+              .then(({ State }) => {
+                if (State.Status === "exited" && State.ExitCode === 0) {
+                  markSuccess();
+                } else {
+                  const error = new Error(State.Error);
+                  error.exitCode = State.ExitCode;
+                  markError(error);
+                }
+              })
+              .catch(markError);
+          });
+        } else {
+          const checkerHandler = setInterval(() => {
+            this.container
+              .inspect()
+              .then(({ State }) => {
+                if (State.Status === "running") {
+                  return;
+                }
+                if (State.Status === "exited" && State.ExitCode === 0) {
+                  markSuccess();
+                } else {
+                  const error = new Error(State.Error);
+                  error.exitCode = State.ExitCode;
+                  markError(error);
+                }
+                clearInterval(checkerHandler);
+                stream.destroy();
+              })
+              .catch(error => {
                 markError(error);
-              }
-            })
-            .catch(markError);
-        });
+                clearInterval(checkerHandler);
+                stream.destroy();
+              });
+          }, 1000);
+        }
       }
       if (this.canPrint) {
         stream.setEncoding("utf8");
         stream.pipe(
           this.stdio.stdout,
-          {
-            end: true
-          }
+          { end: true }
         );
       } else {
         stream.on("data", () => {});
