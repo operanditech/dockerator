@@ -156,7 +156,8 @@ class Dockerator {
     }
     await this.container.start();
     if (untilExit) {
-      return this.finished;
+      await this.finished;
+      await this.container.remove();
     }
   }
   loadExitHandler(process = global.process) {
