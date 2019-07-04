@@ -33,7 +33,7 @@ class Dockerator {
       this.stdio !== "ignore" && this.stdio.stdout && this.stdio.stdout.writable
     );
   }
-  async setup() {
+  async setup(dockerfile) {
     try {
       await this.docker.getImage(this.image).inspect();
     } catch (error) {
@@ -41,7 +41,9 @@ class Dockerator {
         if (this.canPrint) {
           this.stdio.stdout.write("Preparing docker image...\n");
         }
-        const stream = await this.docker.pull(this.image);
+        const stream = dockerfile
+          ? await this.docker.buildImage(dockerfile, { t: this.image })
+          : await this.docker.pull(this.image);
         await new Promise((resolve, reject) => {
           this.docker.modem.followProgress(stream, (error, result) =>
             error ? reject(error) : resolve(result)

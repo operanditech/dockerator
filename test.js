@@ -6,9 +6,19 @@ main().catch(error => {
 });
 
 async function main() {
-  await runFalse();
+  await runDockerfile();
+  // await runFalse();
   // await runMongo();
   // await runNodeos();
+}
+
+async function runDockerfile() {
+  const dock = new Dockerator({
+    image: "eosio-operator",
+    command: ["cleos", "--help"]
+  });
+  await dock.setup({ context: "../operator", src: ["Dockerfile"] });
+  await dock.start({ untilExit: true });
 }
 
 async function runFalse() {
