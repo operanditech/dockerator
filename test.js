@@ -6,8 +6,10 @@ main().catch(error => {
 });
 
 async function main() {
-  await runDockerfile();
+  // await runDockerfile();
+  await runError();
   // await runFalse();
+  // await runTrue();
   // await runMongo();
   // await runNodeos();
 }
@@ -21,10 +23,29 @@ async function runDockerfile() {
   await dock.start({ untilExit: true });
 }
 
+async function runError() {
+  const dock = new Dockerator({
+    image: "ubuntu:18.04",
+    command: ["bash", "-c", "cd some/non-existent/directory"]
+    // stdio: 'ignore'
+  });
+  await dock.setup();
+  await dock.start({ untilExit: true });
+}
+
 async function runFalse() {
   const dock = new Dockerator({
-    image: "mongo:4.0.6",
+    image: "ubuntu:18.04",
     command: ["bash", "-c", 'echo "Some falsehood" && false']
+  });
+  await dock.setup();
+  await dock.start({ untilExit: true });
+}
+
+async function runTrue() {
+  const dock = new Dockerator({
+    image: "ubuntu:18.04",
+    command: ["bash", "-c", 'echo "Some truth" && true']
   });
   await dock.setup();
   await dock.start({ untilExit: true });

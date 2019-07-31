@@ -103,6 +103,11 @@ class Dockerator {
           markSuccess = resolve;
           markError = reject;
         });
+        const executionErrorMsg =
+          "Execution error." +
+          (this.canPrint
+            ? ""
+            : " If you need more details, enable container stdout.");
         if (process.platform !== "win32") {
           stream.once("end", () => {
             this.container
@@ -111,7 +116,7 @@ class Dockerator {
                 if (State.Status === "exited" && State.ExitCode === 0) {
                   markSuccess();
                 } else {
-                  const error = new Error(State.Error);
+                  const error = new Error(State.Error || executionErrorMsg);
                   error.exitCode = State.ExitCode;
                   markError(error);
                 }
@@ -129,7 +134,7 @@ class Dockerator {
                 if (State.Status === "exited" && State.ExitCode === 0) {
                   markSuccess();
                 } else {
-                  const error = new Error(State.Error);
+                  const error = new Error(State.Error || executionErrorMsg);
                   error.exitCode = State.ExitCode;
                   markError(error);
                 }
