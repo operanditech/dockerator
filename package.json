@@ -1,7 +1,10 @@
 {
   "name": "dockerator",
-  "version": "0.3.2",
+  "version": "0.3.4",
   "description": "A simple tool to operate Docker containers",
+  "files": [
+    "dist"
+  ],
   "main": "dist/dockerator.js",
   "scripts": {
     "clean:deps": "rimraf node_modules",
