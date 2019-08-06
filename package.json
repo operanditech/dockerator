@@ -1,6 +1,6 @@
 {
   "name": "dockerator",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "A simple tool to operate Docker containers",
   "files": [
     "dist"
@@ -28,10 +28,10 @@
   },
   "homepage": "https://github.com/operanditech/dockerator#readme",
   "dependencies": {
+    "@types/dockerode": "^2.5.20",
     "dockerode": "^2.5.8"
   },
   "devDependencies": {
-    "@types/dockerode": "^2.5.20",
     "mocha": "^6.2.0",
     "mocha-typescript": "^1.1.17",
     "prettier": "^1.18.2",
