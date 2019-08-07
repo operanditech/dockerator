@@ -46,6 +46,7 @@ export = class Dockerator {
     }
     this.dockerConfig = dockerConfig
   }
+
   public async setup(dockerfile?: { context: string; src: string[] }) {
     try {
       await this.docker.getImage(this.image).inspect()
@@ -72,13 +73,21 @@ export = class Dockerator {
       }
     }
   }
+
   public async stop() {
     if (!this.container) {
       throw new Error('Cannot stop container before starting it')
     }
-    await this.container.stop()
-    await this.container.remove()
+    try {
+      await this.container.stop()
+      await this.container.remove()
+    } catch (e) {
+      if (e.statusCode !== 409 && e.statusCode !== 304) {
+        throw e
+      }
+    }
   }
+
   public async start({ untilExit = false } = {}) {
     this.container = await this.docker.createContainer({
       AttachStdin: false,
@@ -192,6 +201,7 @@ export = class Dockerator {
       await this.container.remove()
     }
   }
+
   public loadExitHandler(process = global.process) {
     const exitHandler = () => {
       this.stop().finally(() => {
